@@ -1,0 +1,8 @@
+set main-view = date:relative-compact id:yes,color author:email-user,width=10 commit-title:yes,graph=yes,refs=yes
+set blame-view = line-number:yes,interval=1 id:yes,color author:email-user text
+set refs-view = date:relative-compact author:email-user,width=10 ref commit-title
+
+bind generic & :toggle sort-order
+bind generic _ !git rebase -i %(commit) --autosquash
+bind generic = @bash -c "git commit --amend"
+bind generic + @bash -c "git commit --fixup %(commit)"

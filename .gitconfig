@@ -1,0 +1,7 @@
+[commit]
+  verbose = true
+[status]
+  showStash = true
+[core]
+  editor = vi
+  excludesFile = ~/.gitignore
