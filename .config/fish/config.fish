@@ -13,3 +13,5 @@ set __fish_git_prompt_showstashstate 'yes'
 set __fish_git_prompt_showuntrackedfiles 'yes'
 set __fish_git_prompt_showupstream 'yes'
 set __fish_git_prompt_shorten_branch_len 10
+
+set -x ERL_AFLAGS "-kernel shell_history enabled"
