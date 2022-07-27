@@ -1,5 +1,7 @@
 if status is-interactive
-  # Commands to run in interactive session can go here
+  if not set -q _fisher_plugins
+    curl -sL git.io/fisher | source && fisher update
+  end
 end
 
 alias cat bat
