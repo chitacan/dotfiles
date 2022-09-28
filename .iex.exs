@@ -83,7 +83,7 @@ defmodule Tool do
   end
 
   def logger(level), do: Logger.configure(level: level)
-  def logger, do: Logger.configure(level: :warn)
+  def logger, do: Logger.configure(level: :info)
 end
 
 alias Tool, as: T
