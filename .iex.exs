@@ -82,6 +82,7 @@ defmodule Tool do
     pid
   end
 
+  def logger(app, level), do: Logger.put_application_level(app, level)
   def logger(level), do: Logger.configure(level: level)
   def logger, do: Logger.configure(level: :info)
 
