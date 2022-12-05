@@ -84,6 +84,13 @@ defmodule Tool do
 
   def logger(level), do: Logger.configure(level: level)
   def logger, do: Logger.configure(level: :info)
+
+  def pid("pid=" <> rest), do: __MODULE__.pid(rest)
+  def pid(pid) do
+    pid
+    |> String.replace(~r/<|>/, "")
+    |> IEx.Helpers.pid()
+  end
 end
 
 alias Tool, as: T
