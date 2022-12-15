@@ -1,6 +1,7 @@
 IEx.configure(
   inspect: [limit: 5_000],
-  history_size: 100
+  history_size: 100,
+  charlists: :as_lists
 )
 
 defmodule Tool do
@@ -87,6 +88,7 @@ defmodule Tool do
   def logger, do: Logger.configure(level: :info)
 
   def pid("pid=" <> rest), do: __MODULE__.pid(rest)
+
   def pid(pid) do
     pid
     |> String.replace(~r/<|>/, "")
