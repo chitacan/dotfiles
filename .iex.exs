@@ -1,7 +1,6 @@
 IEx.configure(
-  inspect: [limit: 5_000],
-  history_size: 100,
-  charlists: :as_lists
+  inspect: [limit: 5_000, charlists: :as_lists],
+  history_size: 100
 )
 
 defmodule Tool do
