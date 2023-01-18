@@ -95,4 +95,10 @@ defmodule Tool do
   end
 end
 
+defmodule :_shortcuts do
+  defdelegate c, to: IEx.Helpers, as: :clear
+  defdelegate r, to: IEx.Helpers, as: :recompile
+end
+
+import :_shortcuts
 alias Tool, as: T
