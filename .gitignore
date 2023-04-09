@@ -2,3 +2,4 @@ TASK.md
 PULL_REQUEST.md
 *.gitcommit
 .context
+!.default_files/**/.context
