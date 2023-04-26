@@ -94,40 +94,43 @@ defmodule Tool do
     |> IEx.Helpers.pid()
   end
 
-  def decode_giv(%{file_info: %{md5: _, ext: _} = key}) do
-    key |> MomentiCore.Gcp.ContentStorage.get_cdn_url() |> decode_giv()
-  end
-
-  def decode_giv(%{md5: _, ext: _} = key) do
-    key |> MomentiCore.Gcp.ContentStorage.get_cdn_url() |> decode_giv()
-  end
-
-  def decode_giv(url) when is_binary(url) do
-    ext = Path.extname(url)
-    file = Path.basename(url)
-
-    target_path =
-      File.cwd!()
-      |> then(fn cwd ->
-        rest =
-          if Mix.Project.umbrella?(),
-            do: ".context/#{file}.exs",
-            else: "../../.context/#{file}.exs"
-
-        Path.join(cwd, rest)
-      end)
-      |> Path.expand()
-
-    with {:ok, %{body: body}} <- HTTPoison.get(url),
-         module <- decoder_module(ext),
-         decoded <- apply(module, :decode, [body]) |> inspect(pretty: true, limit: :infinity),
-         :ok <- File.write(target_path, decoded) do
-      target_path
+  @required [HTTPoison, MomentiCore.Gcp.ContentStorage]
+  if Enum.map(@required, &Code.ensure_loaded/1) |> Enum.all?(&match?({:module, _}, &1)) do
+    def decode_giv(%{file_info: %{md5: _, ext: _} = key}) do
+      key |> MomentiCore.Gcp.ContentStorage.get_cdn_url() |> decode_giv()
     end
-  end
 
-  defp decoder_module(".giv"), do: MomentiMedia.Moment
-  defp decoder_module(".givd"), do: MomentiMedia.Draft.DraftMoment
+    def decode_giv(%{md5: _, ext: _} = key) do
+      key |> MomentiCore.Gcp.ContentStorage.get_cdn_url() |> decode_giv()
+    end
+
+    def decode_giv(url) when is_binary(url) do
+      ext = Path.extname(url)
+      file = Path.basename(url)
+
+      target_path =
+        File.cwd!()
+        |> then(fn cwd ->
+          rest =
+            if Mix.Project.umbrella?(),
+              do: ".context/#{file}.exs",
+              else: "../../.context/#{file}.exs"
+
+          Path.join(cwd, rest)
+        end)
+        |> Path.expand()
+
+      with {:ok, %{body: body}} <- HTTPoison.get(url),
+           module <- decoder_module(ext),
+           decoded <- apply(module, :decode, [body]) |> inspect(pretty: true, limit: :infinity),
+           :ok <- File.write(target_path, decoded) do
+        target_path
+      end
+    end
+
+    defp decoder_module(".giv"), do: MomentiMedia.Moment
+    defp decoder_module(".givd"), do: MomentiMedia.Draft.DraftMoment
+  end
 end
 
 defmodule :_shortcuts do
