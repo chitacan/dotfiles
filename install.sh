@@ -6,8 +6,16 @@ cp .gitconfig ~/
 cp .gitignore ~/
 cp .tigrc ~/
 cp .iex.exs ~/
+cp .vimrc ~/
 
-if [[ -d ~/.config/fish ]]; then
+# setup vim-plug
+if [[ ! -d "${XDG_DATA_HOME:-$HOME/.local/share}"/nvim/site/autoload/plug.vim ]]; then
+  sh -c 'curl -fLo "${XDG_DATA_HOME:-$HOME/.local/share}"/nvim/site/autoload/plug.vim --create-dirs \
+       https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
+fi
+
+# setup fish config
+if [[ ! -d ~/.config/fish ]]; then
   mkdir -p ~/.config/fish
 fi
 
