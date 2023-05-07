@@ -94,6 +94,23 @@ defmodule Tool do
     |> IEx.Helpers.pid()
   end
 
+  def context_path() do
+    File.cwd!()
+    |> then(fn cwd ->
+      rest =
+        if Mix.Project.umbrella?(),
+          do: ".context",
+          else: "../../.context"
+
+      Path.join(cwd, rest)
+    end)
+    |> Path.expand()
+  end
+
+  def context_path(file) do
+    context_path() |> Path.join(file)
+  end
+
   @required [HTTPoison, MomentiCore.Gcp.ContentStorage]
   if Enum.map(@required, &Code.ensure_loaded/1) |> Enum.all?(&match?({:module, _}, &1)) do
     def decode_giv(%{file_info: %{md5: _, ext: _} = key}) do
@@ -107,18 +124,7 @@ defmodule Tool do
     def decode_giv(url) when is_binary(url) do
       ext = Path.extname(url)
       file = Path.basename(url)
-
-      target_path =
-        File.cwd!()
-        |> then(fn cwd ->
-          rest =
-            if Mix.Project.umbrella?(),
-              do: ".context/#{file}.exs",
-              else: "../../.context/#{file}.exs"
-
-          Path.join(cwd, rest)
-        end)
-        |> Path.expand()
+      target_path = context_path("#{file}.exs")
 
       with {:ok, %{body: body}} <- HTTPoison.get(url),
            module <- decoder_module(ext),
@@ -130,6 +136,62 @@ defmodule Tool do
 
     defp decoder_module(".giv"), do: MomentiMedia.Moment
     defp decoder_module(".givd"), do: MomentiMedia.Draft.DraftMoment
+  end
+
+  @required [MomentiCore.Gcp.ContentStorage, MomentiDomain.Repo]
+  if Enum.map(@required, &Code.ensure_loaded/1) |> Enum.all?(&match?({:module, _}, &1)) do
+    def update_giv(project_id, path) when is_binary(path) do
+      case path |> Path.absname() == path do
+        true ->
+          {moment, _} = Code.eval_file(path)
+          update_giv(project_id, moment)
+
+        false ->
+          update_giv(project_id, context_path(path))
+      end
+    end
+
+    def update_giv(project_id, %MomentiMedia.Moment{} = moment) do
+      alias MomentiCore.HashStorage.HashFile
+      alias MomentiCore.Gcp.ContentStorage
+      alias MomentiDomain.V4.Content
+      alias MomentiDomain.V4.Content.MomentInfo
+
+      with %{meta: %{hash: content_hash}} = updated <-
+             MomentiCore.Protobuf.Moment.update_moment_hash(moment),
+           {:ok, %MomentInfo{} = moment_info} <- Content.create_empty_moment_info(project_id),
+           {:ok, file_meta} <-
+             %HashFile{data: MomentiMedia.Moment.encode(updated), ext: "giv"}
+             |> ContentStorage.write_file(),
+           {:ok, file_info} <- ContentStorage.Pure.meta_to_key(file_meta),
+           {:ok, %MomentInfo{} = moment_info} <-
+             MomentInfo.changeset_for_update_content(moment_info, %{
+               file_info: file_info,
+               content_hash: content_hash,
+               status: "exported"
+             })
+             |> MomentiDomain.Repo.update() do
+        moment_info
+      end
+    end
+
+    def update_giv(project_id, %MomentiMedia.Draft.DraftMoment{} = moment) do
+      alias MomentiDomain.V4.Studio.MomentModelInfo
+      alias MomentiCore.HashStorage.HashFile
+      alias MomentiCore.Gcp.ContentStorage
+
+      with %MomentModelInfo{} = moment_model_info <-
+             MomentModelInfo.get_by_project_id(project_id) |> MomentiDomain.Repo.one(),
+           {:ok, file_meta} <-
+             %HashFile{data: MomentiMedia.Draft.DraftMoment.encode(moment), ext: "givd"}
+             |> ContentStorage.write_file(),
+           {:ok, file_info} <- ContentStorage.Pure.meta_to_key(file_meta),
+           {:ok, %MomentModelInfo{} = updated} <-
+             MomentModelInfo.update_file_info(moment_model_info, file_info)
+             |> MomentiDomain.Repo.update() do
+        updated
+      end
+    end
   end
 end
 
