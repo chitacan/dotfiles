@@ -113,6 +113,29 @@ defmodule Tool do
 
   @required [HTTPoison, MomentiCore.Gcp.ContentStorage]
   if Enum.map(@required, &Code.ensure_loaded/1) |> Enum.all?(&match?({:module, _}, &1)) do
+    def decode_giv("(\\x" <> <<md5::binary-size(32)>> <> ",giv)", env) do
+      decode_giv(file_name <> ".giv", env)
+    end
+
+    def decode_giv("(\\x" <> <<md5::binary-size(32)>> <> ",givd)", env) do
+      decode_giv(file_name <> ".givd", env)
+    end
+
+    def decode_giv(file_name, :integ) when is_binary(file_name) do
+      "https://media.integ.momenti.dev/content/#{file_name}"
+      |> decode_giv()
+    end
+
+    def decode_giv(file_name, :staging) when is_binary(file_name) do
+      "https://media.staging.momenti.dev/content/#{file_name}"
+      |> decode_giv()
+    end
+
+    def decode_giv(file_name, :prod) when is_binary(file_name) do
+      "https://media.momenti.tv/content/#{file_name}"
+      |> decode_giv()
+    end
+
     def decode_giv(%{file_info: %{md5: _, ext: _} = key}) do
       key |> MomentiCore.Gcp.ContentStorage.get_cdn_url() |> decode_giv()
     end
