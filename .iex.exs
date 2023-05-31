@@ -114,11 +114,29 @@ defmodule Tool do
   @required [HTTPoison, MomentiCore.Gcp.ContentStorage]
   if Enum.map(@required, &Code.ensure_loaded/1) |> Enum.all?(&match?({:module, _}, &1)) do
     def decode_giv("(\\x" <> <<md5::binary-size(32)>> <> ",giv)", env) do
-      decode_giv(md5 <> ".giv", env)
+      case MomentiCore.Md5.decode_hex(md5) do
+        {:ok, hex} ->
+          hex
+          |> MomentiCore.Md5.encode_url64()
+          |> Kernel.<>(".giv")
+          |> decode_giv(env)
+
+        error ->
+          error
+      end
     end
 
     def decode_giv("(\\x" <> <<md5::binary-size(32)>> <> ",givd)", env) do
-      decode_giv(md5 <> ".givd", env)
+      case MomentiCore.Md5.decode_hex(md5) do
+        {:ok, hex} ->
+          hex
+          |> MomentiCore.Md5.encode_url64()
+          |> Kernel.<>(".givd")
+          |> decode_giv(env)
+
+        error ->
+          error
+      end
     end
 
     def decode_giv(file_name, :integ) when is_binary(file_name) do
