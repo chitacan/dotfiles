@@ -117,61 +117,70 @@ defmodule Tool do
 
   @required [HTTPoison, MomentiCore.Gcp.ContentStorage]
   if Enum.map(@required, &Code.ensure_loaded/1) |> Enum.all?(&match?({:module, _}, &1)) do
-    def decode_giv("(\\x" <> <<md5::binary-size(32)>> <> ",giv)", env) do
+    def decode_giv("(\\x" <> <<md5::binary-size(32)>> <> ",giv)", opts) do
       case MomentiCore.Md5.decode_hex(md5) do
         {:ok, hex} ->
           hex
           |> MomentiCore.Md5.encode_url64()
           |> Kernel.<>(".giv")
-          |> decode_giv(env)
+          |> decode_giv(opts)
 
         error ->
           error
       end
     end
 
-    def decode_giv("(\\x" <> <<md5::binary-size(32)>> <> ",givd)", env) do
+    def decode_giv("(\\x" <> <<md5::binary-size(32)>> <> ",givd)", opts) do
       case MomentiCore.Md5.decode_hex(md5) do
         {:ok, hex} ->
           hex
           |> MomentiCore.Md5.encode_url64()
           |> Kernel.<>(".givd")
-          |> decode_giv(env)
+          |> decode_giv(opts)
 
         error ->
           error
       end
     end
 
-    def decode_giv(file_name, :integ) when is_binary(file_name) do
+    def decode_giv(file_name, %{env: :integ}) when is_binary(file_name) do
       "https://media.integ.momenti.dev/content/#{file_name}"
       |> decode_giv()
     end
 
-    def decode_giv(file_name, :staging) when is_binary(file_name) do
+    def decode_giv(file_name, %{env: :staging}) when is_binary(file_name) do
       "https://media.staging.momenti.dev/content/#{file_name}"
       |> decode_giv()
     end
 
-    def decode_giv(file_name, :prod) when is_binary(file_name) do
+    def decode_giv(file_name, %{env: :prod}) when is_binary(file_name) do
       "https://media.momenti.tv/content/#{file_name}"
       |> decode_giv()
     end
 
-    def decode_giv(%{file_info: %{md5: _, ext: _} = key}) do
-      key |> MomentiCore.Gcp.ContentStorage.get_cdn_url() |> decode_giv()
+    def decode_giv(%{file_info: %{md5: _, ext: _} = key}, opts) do
+      key |> MomentiCore.Gcp.ContentStorage.get_cdn_url() |> decode_giv(opts)
     end
 
-    def decode_giv(%{md5: _, ext: _} = key) do
+    def decode_giv(%{md5: _, ext: _} = key, opts) do
       struct(MomentiCore.HashStorage.HashKey, key)
       |> MomentiCore.Gcp.ContentStorage.get_cdn_url()
-      |> decode_giv()
+      |> decode_giv(opts)
     end
 
-    def decode_giv(url) when is_binary(url) do
+    def decode_giv(url, opts) when is_binary(url) do
       ext = Path.extname(url)
       file = Path.basename(url)
-      target_path = context_path("#{file}.exs")
+
+      project_id =
+        opts
+        |> Map.get(:project_id)
+        |> case do
+          nil -> ""
+          project_id -> ".#{project_id}"
+        end
+
+      target_path = context_path("#{file}#{project_id}.exs")
 
       with {:ok, %{body: body}} <- HTTPoison.get(url),
            module <- decoder_module(ext),

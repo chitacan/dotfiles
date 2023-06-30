@@ -10,10 +10,11 @@ use MomentiDomain.V4.Accounts
 :dbg.tracer(:process, {
   fn
     {:trace, _pid, :call,
-     {Studio.ContentLogic, :update_file_info_of_moment_model_info,
-      [_project_id, file_info, _env]}, _parrent},
+     {Studio.ContentLogic, :update_file_info_of_moment_model_info, [project_id, file_info, _env]},
+     _parrent},
     _ ->
-      T.decode_giv(file_info)
+      T.decode_giv(file_info, %{project_id: project_id})
+      |> IO.inspect(label: "Trace matched")
 
     msg, _ ->
       IO.inspect(msg, label: "Trace not matched")
