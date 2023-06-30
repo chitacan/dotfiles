@@ -105,6 +105,10 @@ defmodule Tool do
       Path.join(cwd, rest)
     end)
     |> Path.expand()
+    |> then(fn path ->
+      if not File.exists?(path), do: File.mkdir_p(path)
+      path
+    end)
   end
 
   def context_path(file) do
@@ -159,7 +163,9 @@ defmodule Tool do
     end
 
     def decode_giv(%{md5: _, ext: _} = key) do
-      key |> MomentiCore.Gcp.ContentStorage.get_cdn_url() |> decode_giv()
+      struct(MomentiCore.HashStorage.HashKey, key)
+      |> MomentiCore.Gcp.ContentStorage.get_cdn_url()
+      |> decode_giv()
     end
 
     def decode_giv(url) when is_binary(url) do
