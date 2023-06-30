@@ -35,6 +35,6 @@ if [[ -n "$CODESPACES" && -n "$GITHUB_REPOSITORY" && -d ".default_files/$GITHUB_
     mkdir /workspaces/.default_files
   fi
 
-  cp -an .default_files/$GITHUB_REPOSITORY/. /workspaces/.default_files/
-  cp -an .default_files/$GITHUB_REPOSITORY/. /workspaces/$RepositoryName
+  cp -a .default_files/$GITHUB_REPOSITORY/. /workspaces/.default_files/
+  cp -a .default_files/$GITHUB_REPOSITORY/. /workspaces/$RepositoryName
 fi
