@@ -143,19 +143,25 @@ defmodule Tool do
       end
     end
 
+    def decode_giv(file_name, env)
+        when is_binary(file_name) and env in [:integ, :staging, :prod] do
+      "https://media.integ.momenti.dev/content/#{file_name}"
+      |> decode_giv(%{})
+    end
+
     def decode_giv(file_name, %{env: :integ}) when is_binary(file_name) do
       "https://media.integ.momenti.dev/content/#{file_name}"
-      |> decode_giv()
+      |> decode_giv(%{})
     end
 
     def decode_giv(file_name, %{env: :staging}) when is_binary(file_name) do
       "https://media.staging.momenti.dev/content/#{file_name}"
-      |> decode_giv()
+      |> decode_giv(%{})
     end
 
     def decode_giv(file_name, %{env: :prod}) when is_binary(file_name) do
       "https://media.momenti.tv/content/#{file_name}"
-      |> decode_giv()
+      |> decode_giv(%{})
     end
 
     def decode_giv(%{file_info: %{md5: _, ext: _} = key}, opts) do
@@ -189,6 +195,8 @@ defmodule Tool do
         target_path
       end
     end
+
+    def decode_giv(file_name), do: decode_giv(file_name, :integ)
 
     defp decoder_module(".giv"), do: MomentiMedia.Moment
     defp decoder_module(".givd"), do: MomentiMedia.Draft.DraftMoment
