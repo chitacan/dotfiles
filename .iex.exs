@@ -145,8 +145,7 @@ defmodule Tool do
 
     def decode_giv(file_name, env)
         when is_binary(file_name) and env in [:integ, :staging, :prod] do
-      "https://media.integ.momenti.dev/content/#{file_name}"
-      |> decode_giv(%{})
+      decode_giv(file_name, %{env: env})
     end
 
     def decode_giv(file_name, %{env: :integ}) when is_binary(file_name) do
