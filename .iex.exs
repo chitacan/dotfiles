@@ -192,10 +192,10 @@ defmodule Tool do
            decoded <- apply(module, :decode, [body]) |> inspect(pretty: true, limit: :infinity),
            :ok <- File.write(target_path, decoded) do
         target_path
-      rescue
-        error ->
-          error
       end
+    rescue
+      error ->
+        error
     end
 
     def decode_giv(file_name), do: decode_giv(file_name, :integ)
