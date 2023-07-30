@@ -111,8 +111,8 @@ defmodule Tool do
     end)
   end
 
-  def context_path(file) do
-    context_path() |> Path.join(file)
+  def giv_path(file) do
+    context_path() |> Path.join("givs") |> Path.join(file)
   end
 
   @required [HTTPoison, MomentiCore.Gcp.ContentStorage]
@@ -185,7 +185,7 @@ defmodule Tool do
           project_id -> ".#{project_id}"
         end
 
-      target_path = context_path("#{file}#{project_id}.exs")
+      target_path = giv_path("#{file}#{project_id}.exs")
 
       with {:ok, %{body: body}} <- HTTPoison.get(url),
            module <- decoder_module(ext),
@@ -213,7 +213,7 @@ defmodule Tool do
           update_giv(project_id, moment)
 
         false ->
-          update_giv(project_id, context_path(path))
+          update_giv(project_id, giv_path(path))
       end
     end
 

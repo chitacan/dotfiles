@@ -28,7 +28,7 @@ use MomentiDomain.V4.Accounts
         |> MomentiCore.Md5.hash()
         |> MomentiCore.Md5.encode_url64()
 
-      path = T.context_path() |> Path.join("#{file}.givd.#{project_id}.exs")
+      path = T.giv_path("#{file}.givd.#{project_id}.exs")
       File.write(path, inspected)
       IO.inspect(path, label: "Trace matched")
 
