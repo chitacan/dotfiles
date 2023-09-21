@@ -115,51 +115,54 @@ defmodule Tool do
     context_path() |> Path.join("givs") |> Path.join(file)
   end
 
+  def file_url(file_name, :integ), do: "https://media.integ.momenti.dev/content/#{file_name}"
+  def file_url(file_name, :staging), do: "https://media.staging.momenti.dev/content/#{file_name}"
+  def file_url(file_name, :prod), do: "https://media.momenti.tv/content/#{file_name}"
+
   @required [HTTPoison, MomentiCore.Gcp.ContentStorage]
   if Enum.map(@required, &Code.ensure_loaded/1) |> Enum.all?(&match?({:module, _}, &1)) do
-    def decode_giv("(\\x" <> <<md5::binary-size(32)>> <> ",giv)", opts) do
+    def content_url("(\\x" <> <<_::binary-size(32)>> <> "," <> _ = file_info), do: content_url(file_info, :integ)
+
+    def content_url(
+          "(\\x" <> <<md5::binary-size(32)>> <> "," <> <<ext::binary-size(4)>> <> ")",
+          env
+        ) do
+      content_url(md5, ext, env)
+    end
+
+    def content_url(
+          "(\\x" <> <<md5::binary-size(32)>> <> "," <> <<ext::binary-size(3)>> <> ")",
+          env
+        ) do
+      content_url(md5, ext, env)
+    end
+
+    def content_url(md5, ext, env) do
       case MomentiCore.Md5.decode_hex(md5) do
         {:ok, hex} ->
           hex
           |> MomentiCore.Md5.encode_url64()
-          |> Kernel.<>(".giv")
-          |> decode_giv(opts)
+          |> Kernel.<>(".")
+          |> Kernel.<>(ext)
+          |> file_url(env)
 
         error ->
           error
       end
     end
 
-    def decode_giv("(\\x" <> <<md5::binary-size(32)>> <> ",givd)", opts) do
-      case MomentiCore.Md5.decode_hex(md5) do
-        {:ok, hex} ->
-          hex
-          |> MomentiCore.Md5.encode_url64()
-          |> Kernel.<>(".givd")
-          |> decode_giv(opts)
+    def decode_giv(file_info), do: decode_giv(file_info, :integ)
 
-        error ->
-          error
-      end
+    def decode_giv("(\\x" <> _ = file_info, env) when env in [:integ, :staging, :prod] do
+      file_info
+      |> content_url(env)
+      |> decode_giv(%{})
     end
 
     def decode_giv(file_name, env)
         when is_binary(file_name) and env in [:integ, :staging, :prod] do
-      decode_giv(file_name, %{env: env})
-    end
-
-    def decode_giv(file_name, %{env: :integ}) when is_binary(file_name) do
-      "https://media.integ.momenti.dev/content/#{file_name}"
-      |> decode_giv(%{})
-    end
-
-    def decode_giv(file_name, %{env: :staging}) when is_binary(file_name) do
-      "https://media.staging.momenti.dev/content/#{file_name}"
-      |> decode_giv(%{})
-    end
-
-    def decode_giv(file_name, %{env: :prod}) when is_binary(file_name) do
-      "https://media.momenti.tv/content/#{file_name}"
+      file_name
+      |> file_url(env)
       |> decode_giv(%{})
     end
 
@@ -197,8 +200,6 @@ defmodule Tool do
       error ->
         error
     end
-
-    def decode_giv(file_name), do: decode_giv(file_name, :integ)
 
     defp decoder_module(".giv"), do: MomentiMedia.Moment
     defp decoder_module(".givd"), do: MomentiMedia.Draft.DraftMoment
