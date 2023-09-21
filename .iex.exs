@@ -109,6 +109,9 @@ defmodule Tool do
       if not File.exists?(path), do: File.mkdir_p(path)
       path
     end)
+  rescue
+    _ ->
+      "/tmp"
   end
 
   def giv_path(file) do
