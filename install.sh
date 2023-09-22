@@ -35,8 +35,8 @@ if [[ -n "$CODESPACES" && -n "$GITHUB_REPOSITORY" && -d ".default_files/$GITHUB_
     mkdir /workspaces/.default_files
   fi
 
-  cp -a .default_files/$GITHUB_REPOSITORY/. /workspaces/.default_files/
-  cp -a .default_files/$GITHUB_REPOSITORY/. /workspaces/$RepositoryName
+  cp -an .default_files/$GITHUB_REPOSITORY/. /workspaces/.default_files/ | true
+  cp -an .default_files/$GITHUB_REPOSITORY/. /workspaces/$RepositoryName | true
 fi
 
 # install npm deps
