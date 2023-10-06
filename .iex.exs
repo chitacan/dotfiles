@@ -124,7 +124,8 @@ defmodule Tool do
 
   @required [HTTPoison, MomentiCore.Gcp.ContentStorage]
   if Enum.map(@required, &Code.ensure_loaded/1) |> Enum.all?(&match?({:module, _}, &1)) do
-    def content_url("(\\x" <> <<_::binary-size(32)>> <> "," <> _ = file_info), do: content_url(file_info, :integ)
+    def content_url("(\\x" <> <<_::binary-size(32)>> <> "," <> _ = file_info),
+      do: content_url(file_info, :integ)
 
     def content_url(
           "(\\x" <> <<md5::binary-size(32)>> <> "," <> <<ext::binary-size(4)>> <> ")",
@@ -247,19 +248,40 @@ defmodule Tool do
 
     def update_giv(project_id, %MomentiMedia.Draft.DraftMoment{} = moment) do
       alias MomentiDomain.V4.Studio.MomentModelInfo
+      alias MomentiDomain.V4.Studio.MomentModelInfos
       alias MomentiCore.HashStorage.HashFile
       alias MomentiCore.Gcp.ContentStorage
 
       with %MomentModelInfo{} = moment_model_info <-
-             MomentModelInfo.get_by_project_id(project_id) |> MomentiDomain.Repo.one(),
+             MomentModelInfos.get(%{filters: %{project_id: project_id}}),
            {:ok, file_meta} <-
              %HashFile{data: MomentiMedia.Draft.DraftMoment.encode(moment), ext: "givd"}
              |> ContentStorage.write_file(),
            {:ok, file_info} <- ContentStorage.Pure.meta_to_key(file_meta),
            {:ok, %MomentModelInfo{} = updated} <-
-             MomentModelInfo.update_file_info(moment_model_info, file_info)
-             |> MomentiDomain.Repo.update() do
+             MomentModelInfos.update_file_info(moment_model_info, file_info) do
         updated
+      end
+    end
+  end
+
+  @required [MomentiDomain.V4.Studio.SessionTracker]
+  if Enum.map(@required, &Code.ensure_loaded/1) |> Enum.all?(&match?({:module, _}, &1)) do
+    def get_session(project_id) do
+      alias MomentiDomain.V4.Studio.SessionTracker
+
+      with {:ok, %{pid: pid}} <- SessionTracker.fetch_session(project_id),
+           true <- Process.alive?(pid) do
+        pid
+      end
+    end
+
+    def get_state(pid), do: :sys.get_state(pid)
+
+    def get_state(pid, keys) when is_list(keys) do
+      with state <- :sys.get_state(pid),
+           filtered <- Map.filter(state, fn {key, _val} -> key in keys end) do
+        filtered
       end
     end
   end
