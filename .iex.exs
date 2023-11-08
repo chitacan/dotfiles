@@ -285,6 +285,43 @@ defmodule Tool do
       end
     end
   end
+
+  def trace(module, function) when is_atom(module) and is_atom(function) do
+    handler = fn
+      {:trace, _pid, :return_from, {m, f, _a}, return}, _ ->
+        IO.inspect(return,
+          label: "↪️  #{m |> to_string() |> String.split(".") |> List.last()}.#{f |> to_string()}"
+        )
+
+      {:trace, _pid, :call, {m, f, arg}}, _ ->
+        IO.inspect(arg,
+          label: "👉 #{m |> to_string() |> String.split(".") |> List.last()}.#{f |> to_string()}"
+        )
+
+      _, _ ->
+        IO.inspect("Not supported", label: "🫠")
+    end
+
+    with {:ok, pid} <- :dbg.tracer(:process, {handler, 0}),
+         {:ok, _} <- :dbg.tpl(module, function, :_, [{:_, [], [{:return_trace}]}]),
+         {:ok, _} <- :dbg.p(self(), :c) do
+      {:ok, pid}
+    else
+      {:error, :already_started} ->
+        :dbg.tpl(module, function, :_, [{:_, [], [{:return_trace}]}])
+
+      _ ->
+        :dbg.stop_clear()
+        {:error, :cannot_trace}
+    end
+  end
+
+  def trace_clear() do
+    with {:ok, _} <- :dbg.get_tracer(),
+         {:ok, _} <- :dbg.ctpl() do
+      :dbg.i()
+    end
+  end
 end
 
 defmodule :_shortcuts do
