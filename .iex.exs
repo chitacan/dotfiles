@@ -278,6 +278,12 @@ defmodule Tool do
 
     def get_state(pid), do: :sys.get_state(pid)
 
+    def get_state(pid, key) when is_atom(key) do
+      pid
+      |> :sys.get_state()
+      |> Map.get(key)
+    end
+
     def get_state(pid, keys) when is_list(keys) do
       with state <- :sys.get_state(pid),
            filtered <- Map.filter(state, fn {key, _val} -> key in keys end) do
@@ -311,7 +317,7 @@ defmodule Tool do
         :dbg.tpl(module, function, :_, [{:_, [], [{:return_trace}]}])
 
       _ ->
-        :dbg.stop_clear()
+        :dbg.stop()
         {:error, :cannot_trace}
     end
   end
