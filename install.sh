@@ -38,12 +38,3 @@ if [[ -n "$CODESPACES" && -n "$GITHUB_REPOSITORY" && -d ".default_files/$GITHUB_
   cp -an .default_files/$GITHUB_REPOSITORY/. /workspaces/.default_files/ | true
   cp -an .default_files/$GITHUB_REPOSITORY/. /workspaces/$RepositoryName | true
 fi
-
-# install npm deps
-deps=("@githubnext/github-copilot-cli" "@withgraphite/graphite-cli")
-for dep in "${deps[@]}"
-do
-  if ! npm ls -g --depth=0 "$dep" > /dev/null ; then
-    npm i -g "$dep"
-  fi
-done
