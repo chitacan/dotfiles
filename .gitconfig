@@ -3,7 +3,7 @@
 [status]
   showStash = true
 [include]
-  path = /home/vscode/.config/.gitconfig
+  path = ~/.config/.gitconfig
 [core]
   editor = vi
   excludesFile = ~/.gitignore
